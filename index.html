@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Willow — Tools for Minds That Work Differently</title>
+  <style>
+    :root { --bg:#0b0b0c; --card:#121216; --text:#eaeaf0; --muted:#a6a6b5; --accent:#9ad0ff; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text); background: radial-gradient(1000px 600px at 10% 0%, rgba(154, 208, 255, 0.12), transparent 60%), var(--bg);
+    }
+    a { color:inherit; text-decoration:none; }
+    .container { max-width: 980px; margin: 0 auto; padding: 24px; }
+    header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .brand { display:flex; align-items:center; gap:10px; }
+    .mark { width:10px; height:10px; border-radius:999px; background: var(--accent); box-shadow: 0 0 0 4px rgba(154,208,255,.14); }
+    .title { font-weight: 600; letter-spacing:.2px; }
+    nav { display:flex; gap: 14px; flex-wrap:wrap; }
+    nav a { font-size: 13px; color: var(--muted); padding: 6px 8px; border-radius: 999px; transition: background .2s, color .2s; }
+    nav a:hover { background: rgba(154, 208, 255, .12); color: var(--text); }
+
+    .hero { padding: 48px 0 32px; display:grid; grid-template-columns:1.1fr .9fr; gap: 32px; align-items:center; }
+    .hero h1 { margin:0; font-size: clamp(30px, 4vw, 52px); line-height: 1.06; }
+    .hero p { margin: 14px 0 20px; color: var(--muted); max-width: 52ch; }
+    .cta { display:flex; gap: 10px; flex-wrap:wrap; }
+    .btn { border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.05); color:var(--text); padding: 10px 14px; border-radius: 999px; font-weight: 520; font-size: 14px; }
+    .btn.primary { background: linear-gradient(120deg, rgba(154,208,255,.28), rgba(154,208,255,.08)); border-color: rgba(154,208,255,.22); }
+    .btn:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); }
+    .btn.primary:hover { background: linear-gradient(120deg, rgba(154,208,255,.36), rgba(154,208,255,.10)); border-color: rgba(154,208,255,.28); }
+
+    .card { background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px; padding: 18px; box-shadow: 0 18px 60px rgba(0,0,0,.35);
+    }
+
+    .grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .grid h3 { margin: 6px 0 8px; font-size: 15px; letter-spacing: .2px; }
+    .grid p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+    section { padding: 24px 0; }
+    .subhead { font-size: 12px; text-transform:uppercase; letter-spacing: .14em; color: var(--muted); }
+
+    footer { border-top: 1px solid rgba(255,255,255,.08); padding: 22px 0; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <div class="title">Willow</div>
+          <div style="color:var(--muted); font-size: 12px;">A quiet system for clarity</div>
+        </div>
+      </div>
+      <nav aria-label="Primary navigation">
+        <a href="#guide">Guide</a>
+        <a href="#pillars">Pillars</a>
+        <a href="#built">Built Different</a>
+        <a href="#tools">Tools</a>
+        <a href="#sisy">Sisy</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <h1>Tools for minds that work differently.</h1>
+          <p>Willow is a small collection of utilities and learning products for neurodivergent cognition—built to be gentle, structured, and emotionally precise.</p>
+          <div class="cta">
+            <a class="btn primary" href="#tools">Explore tools</a>
+            <a class="btn" href="#guide">Read the guide</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="subhead">Now Live</div>
+          <h3 style="margin: 8px 0 10px;">GitHub Pages</h3>
+          <p style="margin:0;">This repository publishes to GitHub Pages. If something looks off, check the README for build instructions or open an issue.</p>
+        </div>
+      </section>
+
+      <section id="guide">
+        <div class="subhead">Guide</div>
+        <h2 style="margin:6px 0 12px;">Start with intention, then build.</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Know the constraint</h3>
+            <p>Stability comes from choosing the smallest possible plan that still moves the story forward.</p>
+          </div>
+          <div class="card">
+            <h3>Make it breathable</h3>
+            <p>Interfaces should feel like rooms—space to pause, and nothing screaming for attention.</p>
+          </div>
+          <div class="card">
+            <h3>Work the invisible</h3>
+            <p>Clarity is often just a better label, a calmer sequence, or fewer choices.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="pillars">
+        <div class="subhead">Pillars</div>
+        <h2 style="margin:6px 0 12px;">A tiny philosophy for building tools.</h2>
+        <div class="grid">
+          <div class="card"><h3>Restraint</h3><p>No noise. No heroics. Just the function.</p></div>
+          <div class="card"><h3>Structure</h3><p>Make the path obvious; keep the effort manageable.</p></div>
+          <div class="card"><h3>Resilience</h3><p>Design for bad days and low capacity.</p></div>
+        </div>
+      </section>
+
+      <section id="built">
+        <div class="subhead">Built Different</div>
+        <h2 style="margin:6px 0 12px;">What you can expect.</h2>
+        <div class="card">
+          <p style="margin:0; color:var(--muted);">The Willow ecosystem is made of modular HTML/CSS that can live anywhere—GitHub Pages, Netlify, Wix, or your own deployment. The goal is portability without losing the feeling.</p>
+        </div>
+      </section>
+
+      <section id="tools">
+        <div class="subhead">Tools</div>
+        <h2 style="margin:6px 0 12px;">What’s here now.</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Reference Pages</h3>
+            <p>Site sections you can turn into brand pages, portfolios, or landing assets.</p>
+          </div>
+          <div class="card">
+            <h3>PDF-friendly modules</h3>
+            <p>Components designed to print cleanly for sharing and offline clarity.</p>
+          </div>
+          <div class="card">
+            <h3>Navigation patterns</h3>
+            <p>Simple flows to keep readers oriented without cognitive overload.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="sisy">
+        <div class="subhead">Sisy</div>
+        <h2 style="margin:6px 0 12px;">A small reminder.</h2>
+        <div class="card">
+          <p style="margin:0; color:var(--muted);">Slow progress is still progress. The work is the practice of returning.</p>
+        </div>
+      </section>
+
+      <section id="contact">
+        <div class="card">
+          <div class="subhead">Contact</div>
+          <h2 style="margin:6px 0 12px;">Questions, requests, or collaborations</h2>
+          <p style="margin:0; color:var(--muted);">Open an issue on this repository or reach out through your usual Willow channel.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Willow — Weeping Willow Whisperer LLC
+    </footer>
+  </div>
+</body>
+</html>
