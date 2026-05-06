@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Spoon Counter — Willow</title>
   <meta name="description" content="A gentle daily energy tracker based on spoon theory. Plan your spoons, log what they go to, end the day with kindness." />
+  <meta name="theme-color" content="#0b0b0c" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Spoons" />
   <style>
     :root {
       --bg:#0b0b0c;
@@ -126,6 +133,37 @@
     .quick:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.18); }
     .quick:active { transform: translateY(1px); }
     .quick .cost { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+
+    .subhead-row { display:flex; align-items:center; justify-content: space-between; gap: 8px; }
+    .preset-editor { margin-top: 12px; display:flex; flex-direction: column; gap: 10px; }
+    .preset-list { display:flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; padding-right: 2px; }
+    .preset-row { display:flex; gap: 6px; align-items: center; }
+    .preset-row input[type="text"] { flex: 1 1 auto; padding: 7px 10px; font-size: 13px; }
+    .preset-row input[type="number"] { width: 64px; padding: 7px 8px; font-size: 13px; }
+    .preset-row .remove {
+      width: 32px; height: 32px; padding: 0; line-height: 1;
+      border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.04);
+      color: var(--muted); cursor: pointer; font-size: 18px;
+    }
+    .preset-row .remove:hover { color: var(--danger); border-color: rgba(255,138,138,.35); background: rgba(255,138,138,.08); }
+    .preset-add { display:flex; gap: 6px; flex-wrap: wrap; align-items: center; padding-top: 10px; border-top: 1px dashed var(--line); }
+    .preset-add input[type="text"] { flex: 1 1 140px; padding: 7px 10px; font-size: 13px; }
+    .preset-add input[type="number"] { width: 64px; padding: 7px 8px; font-size: 13px; }
+    .editor-actions { display:flex; justify-content: space-between; gap: 8px; }
+
+    .install-banner {
+      display:none;
+      align-items:center; justify-content: space-between; gap: 10px;
+      padding: 10px 14px;
+      margin-top: 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(154,208,255,.22);
+      background: linear-gradient(120deg, rgba(154,208,255,.16), rgba(154,208,255,.04));
+      font-size: 13px;
+      color: var(--text);
+    }
+    .install-banner.show { display:flex; }
+    .install-banner .close { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px 8px; }
 
     .row { display:flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
     .row label { color: var(--muted); font-size: 13px; }
@@ -259,8 +297,23 @@
             </div>
 
             <div>
-              <div class="subhead">Common costs</div>
-              <div id="quickGrid" class="quick-grid"></div>
+              <div class="subhead-row">
+                <div class="subhead">Common costs</div>
+                <button class="btn small ghost" id="editPresetsBtn" type="button" aria-expanded="false">Edit</button>
+              </div>
+              <div id="quickGrid" class="quick-grid" aria-label="Quick log presets"></div>
+              <div id="presetEditor" class="preset-editor" hidden>
+                <div id="presetList" class="preset-list" aria-label="Editable preset list"></div>
+                <form id="addPresetForm" class="preset-add" autocomplete="off">
+                  <input type="text" id="newPresetLabel" placeholder="New activity" maxlength="60" aria-label="New preset label" />
+                  <input type="number" id="newPresetCost" min="1" max="50" step="1" value="1" aria-label="New preset cost" />
+                  <button class="btn small" type="submit">Add</button>
+                </form>
+                <div class="editor-actions">
+                  <button class="btn small ghost" type="button" id="resetPresetsBtn">Reset to defaults</button>
+                  <button class="btn small primary" type="button" id="donePresetsBtn">Done</button>
+                </div>
+              </div>
             </div>
 
             <details>
@@ -280,6 +333,14 @@
         </div>
       </section>
 
+      <div id="installBanner" class="install-banner" role="status">
+        <div>Add Spoons to your home screen for quicker access — works offline too.</div>
+        <div>
+          <button class="btn small primary" id="installBtn" type="button">Install</button>
+          <button class="close" id="dismissInstall" type="button" aria-label="Dismiss">×</button>
+        </div>
+      </div>
+
       <p class="footer-note">Spoon theory was coined by Christine Miserandino in 2003. This tool is a quiet companion — not a diagnostic, not a judgment.</p>
     </main>
 
@@ -298,7 +359,9 @@
   <script>
     (function () {
       const STORAGE_KEY = 'willow.spoons.v1';
-      const QUICK_PRESETS = [
+      const PRESETS_KEY = 'willow.spoons.presets.v1';
+      const INSTALL_DISMISSED_KEY = 'willow.spoons.install.dismissed';
+      const DEFAULT_PRESETS = [
         { label: 'Got out of bed', cost: 1 },
         { label: 'Shower', cost: 2 },
         { label: 'Meal', cost: 1 },
@@ -312,6 +375,26 @@
         { label: 'Tough conversation', cost: 4 },
         { label: 'Sensory overload', cost: 4 },
       ];
+
+      const loadPresets = () => {
+        try {
+          const raw = localStorage.getItem(PRESETS_KEY);
+          if (!raw) return DEFAULT_PRESETS.map((p) => ({ ...p }));
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return DEFAULT_PRESETS.map((p) => ({ ...p }));
+          return parsed
+            .filter((p) => p && typeof p.label === 'string' && Number.isFinite(Number(p.cost)))
+            .map((p) => ({ label: p.label.slice(0, 60), cost: Math.max(1, Math.min(50, Math.floor(Number(p.cost)))) }));
+        } catch {
+          return DEFAULT_PRESETS.map((p) => ({ ...p }));
+        }
+      };
+
+      const savePresets = () => {
+        try { localStorage.setItem(PRESETS_KEY, JSON.stringify(presets)); } catch {}
+      };
+
+      let presets = loadPresets();
 
       const todayKey = () => new Date().toISOString().slice(0, 10);
 
@@ -408,7 +491,14 @@
 
       const renderQuick = () => {
         quickGrid.innerHTML = '';
-        QUICK_PRESETS.forEach((p) => {
+        if (!presets.length) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.textContent = 'No presets yet. Add some below.';
+          quickGrid.appendChild(empty);
+          return;
+        }
+        presets.forEach((p) => {
           const b = document.createElement('button');
           b.type = 'button';
           b.className = 'quick';
@@ -418,6 +508,89 @@
           quickGrid.appendChild(b);
         });
       };
+
+      const editor = $('presetEditor');
+      const presetList = $('presetList');
+      const editPresetsBtn = $('editPresetsBtn');
+
+      const renderEditor = () => {
+        presetList.innerHTML = '';
+        if (!presets.length) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.textContent = 'No presets. Add one below or reset to defaults.';
+          presetList.appendChild(empty);
+          return;
+        }
+        presets.forEach((p, i) => {
+          const row = document.createElement('div');
+          row.className = 'preset-row';
+          row.innerHTML = `
+            <input type="text" data-i="${i}" data-field="label" maxlength="60" />
+            <input type="number" data-i="${i}" data-field="cost" min="1" max="50" step="1" />
+            <button class="remove" type="button" data-remove="${i}" aria-label="Remove preset">×</button>
+          `;
+          row.querySelector('[data-field="label"]').value = p.label;
+          row.querySelector('[data-field="cost"]').value = p.cost;
+          presetList.appendChild(row);
+        });
+      };
+
+      const setEditMode = (on) => {
+        editor.hidden = !on;
+        quickGrid.style.display = on ? 'none' : '';
+        editPresetsBtn.textContent = on ? 'Cancel' : 'Edit';
+        editPresetsBtn.setAttribute('aria-expanded', String(on));
+        if (on) renderEditor();
+      };
+
+      editPresetsBtn.addEventListener('click', () => setEditMode(editor.hidden));
+      $('donePresetsBtn').addEventListener('click', () => setEditMode(false));
+      $('resetPresetsBtn').addEventListener('click', () => {
+        presets = DEFAULT_PRESETS.map((p) => ({ ...p }));
+        savePresets();
+        renderEditor();
+        renderQuick();
+      });
+
+      presetList.addEventListener('input', (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLInputElement)) return;
+        const i = Number(t.dataset.i);
+        const field = t.dataset.field;
+        if (Number.isNaN(i) || !presets[i] || !field) return;
+        if (field === 'label') presets[i].label = t.value.slice(0, 60);
+        if (field === 'cost') presets[i].cost = Math.max(1, Math.min(50, Math.floor(Number(t.value) || 1)));
+        savePresets();
+        renderQuick();
+      });
+
+      presetList.addEventListener('click', (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLElement)) return;
+        if (t.dataset.remove !== undefined) {
+          presets.splice(Number(t.dataset.remove), 1);
+          savePresets();
+          renderEditor();
+          renderQuick();
+        }
+      });
+
+      $('addPresetForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const labelInput = $('newPresetLabel');
+        const costInput = $('newPresetCost');
+        const label = labelInput.value.trim();
+        if (!label) { labelInput.focus(); return; }
+        const cost = Math.max(1, Math.min(50, Math.floor(Number(costInput.value) || 1)));
+        presets.push({ label: label.slice(0, 60), cost });
+        savePresets();
+        labelInput.value = '';
+        costInput.value = 1;
+        renderEditor();
+        renderQuick();
+        labelInput.focus();
+      });
 
       const renderAll = () => {
         renderCount();
@@ -513,6 +686,46 @@
 
       renderQuick();
       renderAll();
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch(() => {});
+        });
+      }
+
+      const installBanner = $('installBanner');
+      const installBtn = $('installBtn');
+      const dismissInstall = $('dismissInstall');
+      let deferredPrompt = null;
+
+      const installDismissed = () => {
+        try { return localStorage.getItem(INSTALL_DISMISSED_KEY) === '1'; } catch { return false; }
+      };
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        if (installDismissed()) return;
+        deferredPrompt = e;
+        installBanner.classList.add('show');
+      });
+
+      installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        try { await deferredPrompt.userChoice; } catch {}
+        deferredPrompt = null;
+        installBanner.classList.remove('show');
+      });
+
+      dismissInstall.addEventListener('click', () => {
+        installBanner.classList.remove('show');
+        try { localStorage.setItem(INSTALL_DISMISSED_KEY, '1'); } catch {}
+      });
+
+      window.addEventListener('appinstalled', () => {
+        installBanner.classList.remove('show');
+        deferredPrompt = null;
+      });
     })();
   </script>
 </body>
