@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spoon Counter — Willow</title>
+  <meta name="description" content="A gentle daily energy tracker based on spoon theory. Plan your spoons, log what they go to, end the day with kindness." />
+  <style>
+    :root {
+      --bg:#0b0b0c;
+      --card:#121216;
+      --card-hi:#16161c;
+      --text:#eaeaf0;
+      --muted:#a6a6b5;
+      --accent:#9ad0ff;
+      --accent-soft: rgba(154,208,255,.14);
+      --warn:#ffb78a;
+      --danger:#ff8a8a;
+      --line: rgba(255,255,255,.08);
+    }
+    * { box-sizing:border-box; }
+    html, body { margin:0; padding:0; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background: radial-gradient(1000px 600px at 10% 0%, rgba(154, 208, 255, 0.12), transparent 60%), var(--bg);
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 980px; margin: 0 auto; padding: 24px; }
+
+    header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:10px; }
+    .mark { width:10px; height:10px; border-radius:999px; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+    .title { font-weight: 600; letter-spacing:.2px; }
+    .subtitle { color: var(--muted); font-size: 12px; }
+    nav { display:flex; gap: 14px; flex-wrap:wrap; }
+    nav a { font-size: 13px; color: var(--muted); padding: 6px 8px; border-radius: 999px; transition: background .2s, color .2s; }
+    nav a:hover { background: var(--accent-soft); color: var(--text); }
+
+    .hero { padding: 28px 0 12px; }
+    .hero h1 { margin:0 0 8px; font-size: clamp(28px, 4vw, 44px); line-height: 1.1; }
+    .hero p { margin: 0; color: var(--muted); max-width: 60ch; }
+
+    section { padding: 20px 0; }
+    .subhead { font-size: 12px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin-bottom: 6px; }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.35);
+    }
+
+    .panel {
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+    }
+    @media (max-width: 860px) { .panel { grid-template-columns: 1fr; } }
+
+    .count-row { display:flex; align-items:baseline; gap: 12px; flex-wrap: wrap; }
+    .count {
+      font-size: clamp(44px, 8vw, 72px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .count.low { color: var(--warn); }
+    .count.empty { color: var(--danger); }
+    .count-label { color: var(--muted); font-size: 14px; }
+
+    .spoons {
+      margin-top: 14px;
+      display:flex; flex-wrap: wrap; gap: 8px;
+      min-height: 56px;
+    }
+    .spoon {
+      width: 28px; height: 44px;
+      transition: transform .25s ease, opacity .25s ease, filter .25s ease;
+    }
+    .spoon.spent { opacity: .22; filter: saturate(.4); transform: translateY(2px) rotate(-6deg); }
+
+    .controls { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .btn {
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 520;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, transform .05s ease;
+    }
+    .btn:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary {
+      background: linear-gradient(120deg, rgba(154,208,255,.28), rgba(154,208,255,.08));
+      border-color: rgba(154,208,255,.22);
+    }
+    .btn.primary:hover { background: linear-gradient(120deg, rgba(154,208,255,.36), rgba(154,208,255,.10)); }
+    .btn.ghost { background: transparent; }
+    .btn.small { padding: 6px 10px; font-size: 12px; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .quick-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .quick {
+      display:flex; align-items:center; justify-content: space-between; gap: 8px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--card-hi);
+      cursor: pointer;
+      text-align: left;
+      color: var(--text);
+      font-size: 13px;
+      transition: background .15s ease, border-color .15s ease, transform .05s ease;
+    }
+    .quick:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.18); }
+    .quick:active { transform: translateY(1px); }
+    .quick .cost { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+
+    .row { display:flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+    .row label { color: var(--muted); font-size: 13px; }
+
+    input[type="text"], input[type="number"] {
+      background: var(--card-hi);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input[type="text"]:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: rgba(154,208,255,.45);
+      background: rgba(154,208,255,.06);
+    }
+    input[type="number"] { width: 84px; }
+    input[type="text"] { flex: 1 1 160px; min-width: 0; }
+
+    .log { display:flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .entry {
+      display:flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: var(--card-hi);
+      border-radius: 12px;
+      font-size: 14px;
+    }
+    .entry .meta { color: var(--muted); font-size: 12px; }
+    .entry .actions { display:flex; gap: 6px; }
+    .entry.refill .label::before { content: "+ "; color: var(--accent); }
+    .entry.spend .label::before { content: "− "; color: var(--warn); }
+
+    .empty-state { color: var(--muted); font-size: 13px; padding: 8px 0 4px; }
+
+    .footer-note { margin-top: 28px; color: var(--muted); font-size: 13px; }
+    footer { border-top: 1px solid var(--line); padding: 22px 0; color: var(--muted); font-size: 13px; }
+
+    .pill {
+      display:inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 520;
+    }
+
+    .stack > * + * { margin-top: 14px; }
+
+    details > summary {
+      cursor: pointer; color: var(--muted); font-size: 13px; padding: 6px 0;
+      list-style: none;
+    }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary::before { content: "▸ "; display: inline-block; transition: transform .15s; }
+    details[open] > summary::before { transform: rotate(90deg); }
+
+    .sr { position: absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip: rect(0,0,0,0); white-space: nowrap; border:0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="brand" href="../index.html" aria-label="Back to Willow">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <div class="title">Willow</div>
+          <div class="subtitle">Spoon Counter</div>
+        </div>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="../index.html#tools">All tools</a>
+        <a href="../index.html#guide">Guide</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <span class="pill" aria-hidden="true">Daily energy</span>
+        <h1 style="margin-top:10px;">Spoons for today.</h1>
+        <p>A gentle counter rooted in <em>spoon theory</em>. Set how many spoons you have, tap when you spend one, and let the day be the size it is.</p>
+      </section>
+
+      <section>
+        <div class="panel">
+          <div class="card stack" aria-live="polite">
+            <div>
+              <div class="subhead">Remaining</div>
+              <div class="count-row">
+                <div id="count" class="count">12</div>
+                <div class="count-label">of <span id="totalLabel">12</span> spoons · <span id="dateLabel"></span></div>
+              </div>
+              <div id="spoons" class="spoons" aria-label="Spoon visual"></div>
+            </div>
+
+            <div class="controls">
+              <button class="btn primary" id="spendOne" type="button">Spend 1</button>
+              <button class="btn" id="addOne" type="button">Add 1</button>
+              <button class="btn ghost" id="undoBtn" type="button" disabled>Undo</button>
+            </div>
+
+            <div>
+              <div class="subhead" style="margin-top:6px;">Custom amount</div>
+              <form id="customForm" class="row" autocomplete="off">
+                <input type="text" id="customLabel" placeholder="What did this take?" maxlength="80" />
+                <label for="customCost" class="sr">Cost</label>
+                <input type="number" id="customCost" min="1" max="50" step="1" value="1" />
+                <button class="btn" type="submit">Log</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card stack">
+            <div>
+              <div class="subhead">Start the day</div>
+              <div class="row">
+                <label for="startSpoons">I have</label>
+                <input type="number" id="startSpoons" min="1" max="50" step="1" value="12" />
+                <label for="startSpoons">spoons today</label>
+              </div>
+              <div class="row" style="margin-top:6px;">
+                <button class="btn small" type="button" data-preset="6">Low (6)</button>
+                <button class="btn small" type="button" data-preset="10">Soft (10)</button>
+                <button class="btn small" type="button" data-preset="12">Default (12)</button>
+                <button class="btn small" type="button" data-preset="16">Steady (16)</button>
+              </div>
+            </div>
+
+            <div>
+              <div class="subhead">Common costs</div>
+              <div id="quickGrid" class="quick-grid"></div>
+            </div>
+
+            <details>
+              <summary>End the day</summary>
+              <p style="color:var(--muted); font-size: 13px; margin: 8px 0;">Resets your spoons and clears today's log. Yesterday's count is replaced — not erased from your memory of yourself.</p>
+              <button class="btn" id="resetBtn" type="button">Reset for a new day</button>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="card">
+          <div class="subhead">Today's log</div>
+          <div id="log" class="log"></div>
+          <div id="emptyLog" class="empty-state">Nothing logged yet. The day is still soft.</div>
+        </div>
+      </section>
+
+      <p class="footer-note">Spoon theory was coined by Christine Miserandino in 2003. This tool is a quiet companion — not a diagnostic, not a judgment.</p>
+    </main>
+
+    <footer>
+      Willow — Weeping Willow Whisperer LLC
+    </footer>
+  </div>
+
+  <template id="spoonTemplate">
+    <svg class="spoon" viewBox="0 0 24 38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <ellipse cx="12" cy="8" rx="8" ry="7" fill="rgba(154,208,255,.85)" stroke="rgba(255,255,255,.25)" stroke-width="1"/>
+      <rect x="10" y="13" width="4" height="22" rx="2" fill="rgba(154,208,255,.6)" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+    </svg>
+  </template>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'willow.spoons.v1';
+      const QUICK_PRESETS = [
+        { label: 'Got out of bed', cost: 1 },
+        { label: 'Shower', cost: 2 },
+        { label: 'Meal', cost: 1 },
+        { label: 'Errand', cost: 2 },
+        { label: 'Work meeting', cost: 3 },
+        { label: 'Deep focus (1h)', cost: 3 },
+        { label: 'Social time', cost: 3 },
+        { label: 'Phone call', cost: 2 },
+        { label: 'Commute', cost: 2 },
+        { label: 'Workout', cost: 3 },
+        { label: 'Tough conversation', cost: 4 },
+        { label: 'Sensory overload', cost: 4 },
+      ];
+
+      const todayKey = () => new Date().toISOString().slice(0, 10);
+
+      const defaultState = () => ({
+        date: todayKey(),
+        total: 12,
+        remaining: 12,
+        log: [],
+      });
+
+      const load = () => {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return defaultState();
+          const parsed = JSON.parse(raw);
+          if (parsed.date !== todayKey()) {
+            return { ...defaultState(), total: parsed.total || 12, remaining: parsed.total || 12 };
+          }
+          return parsed;
+        } catch {
+          return defaultState();
+        }
+      };
+
+      const save = (s) => {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+      };
+
+      let state = load();
+
+      const $ = (id) => document.getElementById(id);
+      const countEl = $('count');
+      const totalLabel = $('totalLabel');
+      const dateLabel = $('dateLabel');
+      const spoonsEl = $('spoons');
+      const logEl = $('log');
+      const emptyLog = $('emptyLog');
+      const startSpoons = $('startSpoons');
+      const quickGrid = $('quickGrid');
+      const undoBtn = $('undoBtn');
+      const tmpl = $('spoonTemplate');
+
+      const formatDate = (key) => {
+        const d = new Date(key + 'T00:00:00');
+        return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+      };
+
+      const renderSpoons = () => {
+        spoonsEl.innerHTML = '';
+        const total = Math.max(state.total, 0);
+        const spent = Math.max(total - state.remaining, 0);
+        for (let i = 0; i < total; i++) {
+          const node = tmpl.content.firstElementChild.cloneNode(true);
+          if (i < spent) node.classList.add('spent');
+          spoonsEl.appendChild(node);
+        }
+      };
+
+      const renderCount = () => {
+        countEl.textContent = state.remaining;
+        countEl.classList.toggle('low', state.remaining > 0 && state.remaining <= Math.max(2, Math.ceil(state.total * 0.25)));
+        countEl.classList.toggle('empty', state.remaining <= 0);
+        totalLabel.textContent = state.total;
+        dateLabel.textContent = formatDate(state.date);
+        startSpoons.value = state.total;
+      };
+
+      const renderLog = () => {
+        logEl.innerHTML = '';
+        if (!state.log.length) {
+          emptyLog.style.display = '';
+          return;
+        }
+        emptyLog.style.display = 'none';
+        for (let i = state.log.length - 1; i >= 0; i--) {
+          const entry = state.log[i];
+          const row = document.createElement('div');
+          row.className = 'entry ' + (entry.amount > 0 ? 'spend' : 'refill');
+          const time = new Date(entry.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          row.innerHTML = `
+            <div>
+              <div class="label"></div>
+              <div class="meta"></div>
+            </div>
+            <div class="actions">
+              <button class="btn small ghost" type="button" data-remove="${i}" aria-label="Remove entry">Remove</button>
+            </div>
+          `;
+          row.querySelector('.label').textContent = `${Math.abs(entry.amount)} · ${entry.label}`;
+          row.querySelector('.meta').textContent = time;
+          logEl.appendChild(row);
+        }
+      };
+
+      const renderQuick = () => {
+        quickGrid.innerHTML = '';
+        QUICK_PRESETS.forEach((p) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'quick';
+          b.innerHTML = `<span></span><span class="cost">−${p.cost}</span>`;
+          b.firstElementChild.textContent = p.label;
+          b.addEventListener('click', () => spend(p.cost, p.label));
+          quickGrid.appendChild(b);
+        });
+      };
+
+      const renderAll = () => {
+        renderCount();
+        renderSpoons();
+        renderLog();
+        undoBtn.disabled = state.log.length === 0;
+      };
+
+      const commit = () => {
+        save(state);
+        renderAll();
+      };
+
+      const spend = (amount, label) => {
+        const a = Math.max(1, Math.floor(Number(amount) || 0));
+        state.remaining = Math.max(0, state.remaining - a);
+        state.log.push({ amount: a, label: label || 'Spent', at: Date.now() });
+        commit();
+      };
+
+      const refill = (amount, label) => {
+        const a = Math.max(1, Math.floor(Number(amount) || 0));
+        state.remaining = Math.min(state.total, state.remaining + a);
+        state.log.push({ amount: -a, label: label || 'Refill', at: Date.now() });
+        commit();
+      };
+
+      const setTotal = (n) => {
+        const t = Math.max(1, Math.min(50, Math.floor(Number(n) || 0)));
+        const spent = Math.max(0, state.total - state.remaining);
+        state.total = t;
+        state.remaining = Math.max(0, Math.min(t, t - spent));
+        commit();
+      };
+
+      const undo = () => {
+        const last = state.log.pop();
+        if (!last) return;
+        if (last.amount > 0) state.remaining = Math.min(state.total, state.remaining + last.amount);
+        else state.remaining = Math.max(0, state.remaining + last.amount);
+        commit();
+      };
+
+      const removeEntry = (i) => {
+        const entry = state.log[i];
+        if (!entry) return;
+        if (entry.amount > 0) state.remaining = Math.min(state.total, state.remaining + entry.amount);
+        else state.remaining = Math.max(0, state.remaining + entry.amount);
+        state.log.splice(i, 1);
+        commit();
+      };
+
+      const resetDay = () => {
+        state = { ...defaultState(), total: state.total, remaining: state.total };
+        commit();
+      };
+
+      $('spendOne').addEventListener('click', () => spend(1, 'Tapped'));
+      $('addOne').addEventListener('click', () => refill(1, 'Found a spoon'));
+      undoBtn.addEventListener('click', undo);
+      $('resetBtn').addEventListener('click', resetDay);
+
+      $('customForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const label = $('customLabel').value.trim() || 'Custom';
+        const cost = Number($('customCost').value) || 1;
+        spend(cost, label);
+        $('customLabel').value = '';
+        $('customCost').value = 1;
+        $('customLabel').focus();
+      });
+
+      startSpoons.addEventListener('change', (e) => setTotal(e.target.value));
+
+      document.querySelectorAll('[data-preset]').forEach((btn) => {
+        btn.addEventListener('click', () => setTotal(btn.dataset.preset));
+      });
+
+      logEl.addEventListener('click', (e) => {
+        const t = e.target;
+        if (t instanceof HTMLElement && t.dataset.remove) {
+          removeEntry(Number(t.dataset.remove));
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); spend(1, 'Tapped'); }
+        else if (e.key === '+' || e.key === '=') { refill(1, 'Found a spoon'); }
+        else if (e.key === 'z' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); undo(); }
+      });
+
+      renderQuick();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
