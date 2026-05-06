@@ -190,6 +190,31 @@
     .day-num { font-size: 13px; font-weight: 520; }
     .strip-meta { color: var(--muted); font-size: 12px; margin-top: 8px; }
 
+    .borrowed-note {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(255,183,138,.08);
+      border: 1px solid rgba(255,183,138,.22);
+      color: var(--warn);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .toggle-row {
+      display:flex; align-items:center; gap: 10px;
+      padding: 6px 0;
+      cursor: pointer;
+      font-size: 14px;
+      user-select: none;
+    }
+    .toggle-row input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 16px; height: 16px;
+      cursor: pointer;
+      margin: 0;
+    }
+    .setting-help { color: var(--muted); font-size: 12px; margin: 4px 0 0; line-height: 1.5; }
+
     .install-banner {
       display:none;
       align-items:center; justify-content: space-between; gap: 10px;
@@ -300,6 +325,7 @@
                 <div class="count-label">of <span id="totalLabel">12</span> spoons · <span id="dateLabel"></span></div>
               </div>
               <div id="spoons" class="spoons" aria-label="Spoon visual"></div>
+              <div id="borrowedNote" class="borrowed-note" hidden></div>
             </div>
 
             <div class="controls">
@@ -353,6 +379,15 @@
                   <button class="btn small primary" type="button" id="donePresetsBtn">Done</button>
                 </div>
               </div>
+            </div>
+
+            <div>
+              <div class="subhead">Settings</div>
+              <label class="toggle-row" for="borrowToggle">
+                <input type="checkbox" id="borrowToggle" />
+                <span>Allow borrowing from tomorrow</span>
+              </label>
+              <p class="setting-help">When you go past zero, the extra is owed to tomorrow's total — true to spoon theory.</p>
             </div>
 
             <details>
@@ -461,13 +496,37 @@
 
       let history = loadHistory();
 
+      const SETTINGS_KEY = 'willow.spoons.settings.v1';
+      const loadSettings = () => {
+        try {
+          const raw = localStorage.getItem(SETTINGS_KEY);
+          if (!raw) return { borrowEnabled: false };
+          const parsed = JSON.parse(raw);
+          return { borrowEnabled: !!parsed.borrowEnabled };
+        } catch { return { borrowEnabled: false }; }
+      };
+      const saveSettings = () => {
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch {}
+      };
+      let settings = loadSettings();
+
       const todayKey = () => new Date().toISOString().slice(0, 10);
 
       const defaultState = () => ({
         date: todayKey(),
         total: 12,
         remaining: 12,
+        borrowed: 0,
+        carriedIn: 0,
         log: [],
+      });
+
+      const normalize = (s) => ({
+        ...defaultState(),
+        ...s,
+        borrowed: Number.isFinite(s.borrowed) ? Math.max(0, s.borrowed) : 0,
+        carriedIn: Number.isFinite(s.carriedIn) ? Math.max(0, s.carriedIn) : 0,
+        log: Array.isArray(s.log) ? s.log : [],
       });
 
       const load = () => {
@@ -480,21 +539,30 @@
             const prevRemaining = Number.isFinite(parsed.remaining)
               ? Math.max(0, Math.min(prevTotal, parsed.remaining))
               : prevTotal;
-            const prevSpent = Math.max(0, prevTotal - prevRemaining);
+            const prevBorrowed = Number.isFinite(parsed.borrowed) ? Math.max(0, parsed.borrowed) : 0;
+            const prevSpent = Math.max(0, prevTotal - prevRemaining) + prevBorrowed;
             if (parsed.date && !history.some((h) => h.date === parsed.date)) {
               history.push({
                 date: parsed.date,
                 total: prevTotal,
                 remaining: prevRemaining,
                 spent: prevSpent,
+                borrowed: prevBorrowed,
                 logCount: Array.isArray(parsed.log) ? parsed.log.length : 0,
               });
               if (history.length > MAX_HISTORY) history = history.slice(-MAX_HISTORY);
               saveHistory();
             }
-            return { ...defaultState(), total: prevTotal, remaining: prevTotal };
+            const carriedIn = Math.min(prevBorrowed, prevTotal);
+            return {
+              ...defaultState(),
+              total: prevTotal,
+              remaining: Math.max(0, prevTotal - carriedIn),
+              borrowed: 0,
+              carriedIn,
+            };
           }
-          return parsed;
+          return normalize(parsed);
         } catch {
           return defaultState();
         }
@@ -685,7 +753,7 @@
           let total = 0, spent = 0, isToday = false, empty = false;
           if (key === state.date) {
             total = state.total;
-            spent = Math.max(0, state.total - state.remaining);
+            spent = Math.max(0, state.total - state.remaining) + state.borrowed;
             isToday = true;
           } else {
             const h = history.find((x) => x.date === key);
@@ -716,9 +784,25 @@
         }
       };
 
+      const noteEl = $('borrowedNote');
+      const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+      const renderBorrowed = () => {
+        const parts = [];
+        if (state.carriedIn > 0) parts.push(`Started today owing ${plural(state.carriedIn, 'spoon')} from yesterday.`);
+        if (state.borrowed > 0) parts.push(`Borrowed ${plural(state.borrowed, 'spoon')} from tomorrow.`);
+        if (parts.length) {
+          noteEl.hidden = false;
+          noteEl.textContent = parts.join(' ');
+        } else {
+          noteEl.hidden = true;
+          noteEl.textContent = '';
+        }
+      };
+
       const renderAll = () => {
         renderCount();
         renderSpoons();
+        renderBorrowed();
         renderLog();
         renderStrip();
         undoBtn.disabled = state.log.length === 0;
@@ -731,14 +815,22 @@
 
       const spend = (amount, label) => {
         const a = Math.max(1, Math.floor(Number(amount) || 0));
-        state.remaining = Math.max(0, state.remaining - a);
+        if (settings.borrowEnabled) {
+          const fromRemaining = Math.min(state.remaining, a);
+          state.remaining -= fromRemaining;
+          state.borrowed += a - fromRemaining;
+        } else {
+          state.remaining = Math.max(0, state.remaining - a);
+        }
         state.log.push({ amount: a, label: label || 'Spent', at: Date.now() });
         commit();
       };
 
       const refill = (amount, label) => {
         const a = Math.max(1, Math.floor(Number(amount) || 0));
-        state.remaining = Math.min(state.total, state.remaining + a);
+        const fromBorrow = Math.min(state.borrowed, a);
+        state.borrowed -= fromBorrow;
+        state.remaining = Math.min(state.total, state.remaining + (a - fromBorrow));
         state.log.push({ amount: -a, label: label || 'Refill', at: Date.now() });
         commit();
       };
@@ -751,37 +843,58 @@
         commit();
       };
 
+      const refundSpend = (amount) => {
+        const fromBorrow = Math.min(state.borrowed, amount);
+        state.borrowed -= fromBorrow;
+        state.remaining = Math.min(state.total, state.remaining + (amount - fromBorrow));
+      };
+
+      const undoRefill = (amount) => {
+        const a = Math.abs(amount);
+        const fromRemaining = Math.min(state.remaining, a);
+        state.remaining -= fromRemaining;
+        state.borrowed += a - fromRemaining;
+      };
+
       const undo = () => {
         const last = state.log.pop();
         if (!last) return;
-        if (last.amount > 0) state.remaining = Math.min(state.total, state.remaining + last.amount);
-        else state.remaining = Math.max(0, state.remaining + last.amount);
+        if (last.amount > 0) refundSpend(last.amount);
+        else undoRefill(last.amount);
         commit();
       };
 
       const removeEntry = (i) => {
         const entry = state.log[i];
         if (!entry) return;
-        if (entry.amount > 0) state.remaining = Math.min(state.total, state.remaining + entry.amount);
-        else state.remaining = Math.max(0, state.remaining + entry.amount);
+        if (entry.amount > 0) refundSpend(entry.amount);
+        else undoRefill(entry.amount);
         state.log.splice(i, 1);
         commit();
       };
 
       const resetDay = () => {
-        const spent = Math.max(0, state.total - state.remaining);
+        const spent = Math.max(0, state.total - state.remaining) + state.borrowed;
         if (state.date && !history.some((h) => h.date === state.date)) {
           history.push({
             date: state.date,
             total: state.total,
             remaining: state.remaining,
             spent,
+            borrowed: state.borrowed,
             logCount: state.log.length,
           });
           if (history.length > MAX_HISTORY) history = history.slice(-MAX_HISTORY);
           saveHistory();
         }
-        state = { ...defaultState(), total: state.total, remaining: state.total };
+        const carriedIn = Math.min(state.borrowed, state.total);
+        state = {
+          ...defaultState(),
+          total: state.total,
+          remaining: Math.max(0, state.total - carriedIn),
+          borrowed: 0,
+          carriedIn,
+        };
         commit();
       };
 
@@ -804,6 +917,13 @@
 
       document.querySelectorAll('[data-preset]').forEach((btn) => {
         btn.addEventListener('click', () => setTotal(btn.dataset.preset));
+      });
+
+      const borrowToggle = $('borrowToggle');
+      borrowToggle.checked = settings.borrowEnabled;
+      borrowToggle.addEventListener('change', () => {
+        settings.borrowEnabled = borrowToggle.checked;
+        saveSettings();
       });
 
       logEl.addEventListener('click', (e) => {
