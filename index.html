@@ -3,246 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Willow — A quiet system for clarity</title>
+    <title>Willow</title>
     <style>
         :root {
-            --bg: #0f0f0f;
-            --fg: #e0e0e0;
-            --muted: #888;
-            --accent: #4a9eff;
-            --border: #333;
+            --black: #11100e;
+            --beige: #d9c7ad;
+            --white: #fffaf0;
+            --soft-black: #1d1a16;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            background: var(--bg);
-            color: var(--fg);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
             margin: 0;
-            padding: 0;
+            min-height: 100vh;
+            background: var(--black);
+            color: var(--white);
+            font-family: Georgia, "Times New Roman", serif;
         }
 
-        .container {
-            max-width: 800px;
+        main {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 32px;
+        }
+
+        .site {
+            width: min(100%, 760px);
+            border: 1px solid rgba(217, 199, 173, 0.38);
+            background: linear-gradient(145deg, var(--soft-black), var(--black));
+            padding: clamp(32px, 8vw, 72px);
+            text-align: center;
+        }
+
+        .eyebrow {
+            margin: 0 0 18px;
+            color: var(--beige);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--white);
+            font-size: clamp(64px, 16vw, 150px);
+            font-weight: 400;
+            line-height: 0.9;
+        }
+
+        .willow-mark {
+            width: min(100%, 240px);
+            height: auto;
+            margin: 30px auto 28px;
+            color: var(--beige);
+            display: block;
+        }
+
+        .willow-mark path,
+        .willow-mark ellipse {
+            vector-effect: non-scaling-stroke;
+        }
+
+        p {
+            max-width: 520px;
             margin: 0 auto;
-            padding: 40px 20px;
-        }
-
-        header {
-            margin-bottom: 60px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .mark {
-            width: 24px;
-            height: 24px;
-            background: var(--fg);
-            border-radius: 4px;
-        }
-
-        .title {
-            font-size: 18px;
-            font-weight: 600;
-            letter-spacing: -.02em;
+            color: var(--beige);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: clamp(16px, 2.4vw, 20px);
+            line-height: 1.7;
         }
 
         nav {
             display: flex;
-            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 38px;
         }
 
-        nav a {
-            color: var(--muted);
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        nav a:hover {
-            color: var(--fg);
-        }
-
-        h1 { font-size: 32px; font-weight: 700; margin-bottom: 24px; letter-spacing: -.03em; }
-        h2 { font-size: 20px; font-weight: 600; margin-bottom: 16px; margin-top: 40px; }
-        h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-        p { margin-bottom: 24px; color: var(--fg); }
-
-        .hero { margin-bottom: 80px; }
-        .hero p { font-size: 18px; color: var(--muted); }
-
-        .cta {
-            display: flex;
-            gap: 16px;
-            margin-top: 32px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-
-        .btn.primary {
-            background: var(--fg);
-            color: var(--bg);
-        }
-
-        .btn:not(.primary) {
-            border: 1px solid var(--border);
-            color: var(--fg);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 16px;
-        }
-
-        .card {
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            transition: border-color 0.2s;
-        }
-
-        .card:hover {
-            border-color: var(--muted);
-        }
-
-        .card p {
-            margin: 0;
-            color: var(--muted);
+        a {
+            border: 1px solid var(--beige);
+            color: var(--white);
+            padding: 12px 18px;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .card a {
+            letter-spacing: 0.08em;
             text-decoration: none;
-            color: inherit;
-            display: block;
-        }
-
-        .subhead {
-            font-size: 12px;
             text-transform: uppercase;
-            letter-spacing: .14em;
-            color: var(--muted);
-            margin-bottom: 8px;
         }
 
-        footer {
-            border-top: 1px solid rgba(255,255,255,.08);
-            padding: 22px 0;
-            margin-top: 80px;
-            color: var(--muted);
-            font-size: 13px;
+        a:hover,
+        a:focus-visible {
+            background: var(--beige);
+            color: var(--black);
         }
 
-        @media (max-width: 860px) {
-            .hero { grid-template-columns: 1fr; }
-            .grid { grid-template-columns: 1fr; }
+        a:focus-visible {
+            outline: 2px solid var(--white);
+            outline-offset: 4px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="brand">
-                <span class="mark" aria-hidden="true"></span>
-                <div>
-                    <div class="title">Willow</div>
-                    <div style="color:var(--muted); font-size: 12px;">A quiet system for clarity</div>
-                </div>
-            </div>
-            <nav aria-label="Primary navigation">
-                <a href="#guide">Guide</a>
-                <a href="#pillars">Pillars</a>
-                <a href="#built">Built Different</a>
-                <a href="#tools">Tools</a>
-                <a href="#sisy">Sisy</a>
-                <a href="#contact">Contact</a>
+    <main>
+        <section class="site" aria-labelledby="site-title">
+            <p class="eyebrow">soft tools for clear days</p>
+            <h1 id="site-title">Willow</h1>
+            <svg class="willow-mark" viewBox="0 0 260 92" role="img" aria-label="Minimal willow branch">
+                <path d="M21 64C75 29 139 19 238 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M70 45C65 60 56 69 44 75" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M113 33C106 51 93 62 80 68" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M158 27C152 45 139 58 123 65" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M201 27C195 42 184 52 170 58" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <ellipse cx="43" cy="75" rx="8" ry="3" transform="rotate(-28 43 75)" fill="currentColor" opacity="0.9"/>
+                <ellipse cx="78" cy="68" rx="9" ry="3" transform="rotate(-24 78 68)" fill="currentColor" opacity="0.9"/>
+                <ellipse cx="121" cy="65" rx="9" ry="3" transform="rotate(-20 121 65)" fill="currentColor" opacity="0.9"/>
+                <ellipse cx="169" cy="58" rx="8" ry="3" transform="rotate(-22 169 58)" fill="currentColor" opacity="0.9"/>
+            </svg>
+            <p>A quiet digital space for reset, reflection, and small supportive rituals.</p>
+            <nav aria-label="Willow tools">
+                <a href="./reset/index.html">Start with Reset</a>
+                <a href="./spoons/index.html">Track Spoons</a>
             </nav>
-        </header>
-
-        <main>
-            <section class="hero">
-                <div>
-                    <h1>Tools for minds that work differently.</h1>
-                    <p>Willow is a small collection of utilities and learning products for neurodivergent cognition—built to be gentle, structured, and profoundly simple.</p>
-                    <div class="cta">
-                        <a class="btn primary" href="#tools">Explore tools</a>
-                        <a class="btn" href="#guide">Read the guide</a>
-                    </div>
-                </div>
-            </section>
-
-            <section id="guide">
-                <div class="subhead">Guide</div>
-                <h2 style="margin:6px 0 12px;">Start with intention, then build.</h2>
-                <div class="grid">
-                    <div class="card">
-                        <h3>Know the Constraint</h3>
-                        <p>Stability is found in the boundaries. We build for the "low-capacity version" of yourself, ensuring the system works even when energy is at zero.</p>
-                    </div>
-                    <div class="card">
-                        <h3>Make it Breathable</h3>
-                        <p>Interfaces are environments, not just tools. We prioritize negative space and reduced visual noise to prevent cognitive override.</p>
-                    </div>
-                    <div class="card">
-                        <h3>Work the Invisible</h3>
-                        <p>Focus on the "Recognition Objects"—the subtle cues that help you observe your own state without the friction of manual tracking.</p>
-                    </div>
-                </div>
-            </section>
-
-            <section id="pillars">
-                <div class="subhead">Pillars</div>
-                <h2 style="margin:6px 0 12px;">A tiny philosophy for building tools.</h2>
-                <div class="grid">
-                    <div class="card"><h3>Reset</h3><p>Immediate calibration and grounding tools.</p></div>
-                    <div class="card"><h3>Reflect</h3><p>Systems for self-observation (e.g., the Spoon Counter).</p></div>
-                    <div class="card"><h3>Relate</h3><p>Frameworks for external communication and community.</p></div>
-                    <div class="card"><h3>The Whisperers</h3><p>Peer-led cognitive strategies and curated assets.</p></div>
-                    <div class="card"><h3>Resources</h3><p>Minimalist design systems, typography, and SKU-tracked prompts.</p></div>
-                    <div class="card"><h3>Journal</h3><p>Long-form narrative archiving for Recognition Objects.</p></div>
-                </div>
-            </section>
-
-            <section id="built">
-                <div class="subhead">Built Different</div>
-                <h2 style="margin:6px 0 12px;">What you can expect.</h2>
-                <div class="card">
-                    <p style="margin:0; color:var(--muted);">The Willow ecosystem is made of modular HTML/CSS that can live anywhere—GitHub Pages, local files, or minimalist dashboards.</p>
-                </div>
-            </section>
-
-            <section id="tools">
-                <div class="subhead">Tools</div>
-                <h2 style="margin:6px 0 12px;">What's here now.</h2>
-                <div class="grid">
-                    <a class="card" href="./spoons/index.html" style="display:block;">
-                        <h3>Spoon Counter →</h3>
- <div>
-        <h4><a href="./reset/index.html" style="color: var(--accent); text-decoration: underline;">Willow Reset →</a></h4>
-        <p>A quick-clear grounding tool. Features sensory grounding techniques and a breathing pacer for immediate calibration.</p>
-    </div>                </div>
-            </section>
-
-        </main>
-
-        <footer>
-            &copy; 2024 Willow System. Designed for clarity.
-        </footer>
-    </div>
+        </section>
+    </main>
 </body>
 </html>
